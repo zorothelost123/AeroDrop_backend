@@ -1,4 +1,4 @@
-﻿const pool = require("../config/db");
+const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 
 exports.getProducts = async (req, res) => {
@@ -409,7 +409,13 @@ exports.getOwnerDeliveries = async (req, res) => {
 };
 
 exports.createProducts = async (req, res) => {
-  const { name, price, category, image_url } = req.body;
+  const { name, price, category } = req.body;
+  let { image_url } = req.body;
+  
+  if (!image_url || image_url.trim() === "") {
+    image_url = "https://placehold.co/400x300?text=AeroDrop+Item";
+  }
+
   try {
     const result = await pool.query(
       "INSERT INTO sample_products (name, price, category, image_url) VALUES ($1, $2, $3, $4) RETURNING *",
@@ -457,7 +463,7 @@ exports.getAgents = async (req, res) => {
 };
 
 exports.createAgent = async (req, res) => {
-  const { name, phone, password } = req.body;
+  const { name, phone, password, vehicle_type } = req.body;
 
   try {
     const lastAgentResult = await pool.query(
@@ -472,8 +478,8 @@ exports.createAgent = async (req, res) => {
     }
 
     const result = await pool.query(
-      "INSERT INTO delivery_agents (agent_id, name, phone, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [nextId, name, phone, password || "1234"]
+      "INSERT INTO delivery_agents (agent_id, name, phone, password, vehicle_type) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [nextId, name, phone, password || "1234", vehicle_type || null]
     );
 
     res.json({ success: true, agent: result.rows[0] });
@@ -604,5 +610,30 @@ exports.verifyHandoffToken = async (req, res) => {
     });
   } catch (err) {
     return res.status(401).json({ success: false, message: "Link expired or invalid" });
+  }
+};
+
+exports.updateAgentStatus = async (req, res) => {
+  const agentId = req.agent?.agent_id || req.agent?.id;
+  const { is_online } = req.body;
+
+  if (is_online === undefined) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE delivery_agents SET is_online = $1 WHERE agent_id = $2 RETURNING *",
+      [is_online, agentId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, message: "Agent not found" });
+    }
+
+    res.json({ success: true, agent: result.rows[0] });
+  } catch (err) {
+    console.error("Error updating agent status:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

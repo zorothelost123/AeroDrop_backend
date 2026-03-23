@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const router = express.Router();
 
 const {
@@ -24,6 +24,7 @@ const {
   cancelOrder,
   generateHandoffToken,
   verifyHandoffToken,
+  updateAgentStatus,
 } = require("../controllers/deliveryController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -60,5 +61,6 @@ router.get("/unassigned", agentProtect, getUnassignedOrders);
 router.put("/accept/:orderId", agentProtect, acceptOrder);
 router.get("/active", agentProtect, getActiveOrders);
 router.put("/status/:orderId", agentProtect, updateOrderStatus);
+router.put("/agent/status", agentProtect, updateAgentStatus);
 
 module.exports = router;

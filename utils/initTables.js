@@ -1,4 +1,4 @@
-﻿const pool = require("../config/db");
+const pool = require("../config/db");
 
 const categories = ["dairy", "bakery", "fruits", "beverages", "snacks", "essentials"];
 
@@ -150,8 +150,13 @@ async function initTables() {
         name VARCHAR(100) NOT NULL,
         password VARCHAR(255) NOT NULL,
         phone VARCHAR(20),
-        is_online BOOLEAN DEFAULT TRUE
+        is_online BOOLEAN DEFAULT TRUE,
+        vehicle_type VARCHAR(50)
       );
+    `);
+
+    await pool.query(`
+      ALTER TABLE delivery_agents ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50);
     `);
 
     const agentCheck = await pool.query("SELECT COUNT(*) FROM delivery_agents");
