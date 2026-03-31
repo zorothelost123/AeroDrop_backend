@@ -3,6 +3,13 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 
+const isProduction = process.env.NODE_ENV === "production";
+const authCookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+};
+
 exports.getOwnerAdminInfo = async (req, res) => {
   try {
     const result = await pool.query(
@@ -114,15 +121,12 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign({ userId: owner.user_id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.cookie("authToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
+    res.cookie("authToken", token, authCookieOptions);
 
     res.json({
       success: true,
       message: "Login successful",
+      token,
       user: {
         user_id: owner.user_id,
         name: owner.name,
@@ -226,10 +230,13 @@ exports.aeroDropOwnerLogin = async (req, res) => {
     }
 
     const { password: _, ...ownerData } = owner;
+    const token = jwt.sign({ userId: owner.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.cookie("authToken", token, authCookieOptions);
 
     res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       owner: ownerData,
     });
   } catch (error) {
@@ -260,15 +267,12 @@ exports.aeroDropClientLogin = async (req, res) => {
     delete user.password;
 
     const token = jwt.sign({ userId: user.user_id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.cookie("authToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
+    res.cookie("authToken", token, authCookieOptions);
 
     res.status(200).json({
       success: true,
       message: "Welcome to AeroDrop!",
+      token,
       user,
     });
   } catch (error) {

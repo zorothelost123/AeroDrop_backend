@@ -1,10 +1,13 @@
 ﻿const jwt = require("jsonwebtoken");
 
 const protect = (req, res, next) => {
-  let token;
+  let token = req.cookies?.authToken;
 
-  if (req.cookies && req.cookies.authToken) {
-    token = req.cookies.authToken;
+  if (!token && typeof req.headers.authorization === "string") {
+    const [scheme, value] = req.headers.authorization.split(" ");
+    if (scheme === "Bearer" && value) {
+      token = value;
+    }
   }
 
   if (!token) {
