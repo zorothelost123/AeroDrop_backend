@@ -1,13 +1,20 @@
 ﻿const { Pool } = require("pg");
 require("dotenv").config();
 
-const pool = new Pool({
-  user: process.env.DATABASE_USER,
-  host: process.env.DATABASE_HOST,
-  database: process.env.DATABASE_NAME,
-  password: process.env.DATABASE_PASSWORD,
-  port: process.env.DATABASE_PORT,
-});
+// Configuration that uses a connection string if available,
+// or falls back to individual variables for local development.
+const poolConfig = {
+  connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DATABASE_USER}:${process.env.DATABASE_PASSWORD}@${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT}/${process.env.DATABASE_NAME}`,
+};
+
+// If the app is running in production (Render), we MUST enable SSL
+if (process.env.NODE_ENV === "production") {
+  poolConfig.ssl = {
+    rejectUnauthorized: false, // Required for most managed databases like Supabase/Render
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 pool.on("connect", () => {
   console.log("🗄️  Connected to PostgreSQL Database");
