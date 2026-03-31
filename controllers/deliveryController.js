@@ -72,21 +72,12 @@ exports.placeOrder = async (req, res) => {
     );
 
     const order = result.rows[0];
+    const io = req.app.get("io");
 
-    setTimeout(async () => {
-      try {
-        const check = await pool.query("SELECT status FROM delivery_orders WHERE order_id = $1", [order.order_id]);
-        if (check.rows.length > 0 && check.rows[0].status === "PENDING") {
-          const io = req.app.get("io");
-          if (io) {
-            io.emit("new_order", { orderId: order.order_id });
-            io.emit("new_order", { order });
-          }
-        }
-      } catch (err) {
-        console.error("Delayed emit error:", err);
-      }
-    }, 30 * 1000);
+    if (io) {
+      io.emit("new_order", { orderId: order.order_id });
+      io.emit("new_order", { order });
+    }
 
     res.json({ success: true, order });
   } catch (err) {
@@ -374,7 +365,6 @@ exports.getOwnerDeliveries = async (req, res) => {
         actual_time_taken
       FROM delivery_orders
       WHERE status != 'CANCELLED'
-        AND (status != 'PENDING' OR EXTRACT(EPOCH FROM (NOW() - created_at)) >= 30)
       ORDER BY created_at DESC
     `);
 
